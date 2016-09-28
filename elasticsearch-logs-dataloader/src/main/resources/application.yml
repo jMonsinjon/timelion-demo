@@ -11,3 +11,12 @@ loader:
   - ES
   - POR
   - IT
+
+elasticsearch:
+  clusterName: timelion-demo
+  indexName: timelion-demo
+  documentType: log
+  nodes:
+    - elk07:
+      host: localhost
+      port: 9300

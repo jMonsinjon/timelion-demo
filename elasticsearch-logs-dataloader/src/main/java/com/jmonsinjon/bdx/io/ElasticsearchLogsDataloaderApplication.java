@@ -9,9 +9,5 @@ public class ElasticsearchLogsDataloaderApplication {
 	public static void main(String[] args) {
 
 		SpringApplication.run(ElasticsearchLogsDataloaderApplication.class, args);
-
-		while(true){
-			System.console().printf("toto");
-		}
 	}
 }
