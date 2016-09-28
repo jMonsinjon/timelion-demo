@@ -8,6 +8,7 @@ import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.transport.TransportAddress;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
@@ -26,7 +27,7 @@ public class ElasticsearchConfiguration {
 
     private ElasticsearchServerSettings elasticsearchServerSettings;
 
-    @Inject
+    @Autowired
     public ElasticsearchConfiguration(ElasticsearchServerSettings elasticsearchServerSettings) {
         this.elasticsearchServerSettings = elasticsearchServerSettings;
     }

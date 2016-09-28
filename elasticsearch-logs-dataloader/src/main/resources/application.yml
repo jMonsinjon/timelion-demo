@@ -1,22 +1,39 @@
 loader:
-  - USA
-  - FR
-  - BE
-  - GER
-  - CH
-  - NZL
-  - AUS
-  - KOR
-  - JAP
-  - ES
-  - POR
-  - IT
+  country: FR
+  year: 2015
+  monthBoost:
+    1: 10
+    2: 20
+    3: 30
+    4: 35
+    5: 35
+    6: 35
+    7: 40
+    8: 41
+    9: 41
+    10: 35
+    11: 35
+    12: 35
+  daysForMonth:
+    1: 31
+    2: 28
+    3: 31
+    4: 30
+    5: 31
+    6: 30
+    7: 31
+    8: 31
+    9: 30
+    10: 31
+    11: 30
+    12: 31
+
 
 elasticsearch:
-  clusterName: timelion-demo
-  indexName: timelion-demo
+  clusterName: "Timelion-Demo"
+  indexName: "timelion-demo"
   documentType: log
   nodes:
-    - elk07:
-      host: localhost
+    - localhost:
+      host: 127.0.0.1
       port: 9300
