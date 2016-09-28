@@ -1,0 +1,20 @@
+*.class
+.project
+.classpath
+.settings
+ 
+# Package Files #
+*.jar
+*.war
+*.ear
+ 
+ 
+#IntelliJ-related files
+*.iml
+.idea
+ 
+#Other generated folders
+target
+pom.xml.versionsBackup
+
+build-info.properties
