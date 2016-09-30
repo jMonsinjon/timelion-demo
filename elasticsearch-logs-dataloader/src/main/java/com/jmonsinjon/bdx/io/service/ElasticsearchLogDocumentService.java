@@ -2,12 +2,25 @@ package com.jmonsinjon.bdx.io.service;
 
 import com.jmonsinjon.bdx.io.config.LoaderConfiguration;
 import com.jmonsinjon.bdx.io.model.ElasticsearchLogDocument;
-import org.elasticsearch.common.inject.Inject;
+import com.jmonsinjon.bdx.io.settings.ElasticsearchNode;
+import com.jmonsinjon.bdx.io.settings.ElasticsearchServerSettings;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -19,23 +32,60 @@ import java.util.Random;
 public class ElasticsearchLogDocumentService {
 
     private LoaderConfiguration loaderConfiguration;
+    private ElasticsearchServerSettings elasticsearchServerSettings;
     private List<Integer> availableMonths = new ArrayList<>();
+    private TransportClient client;
+    private ObjectMapper mapper = new ObjectMapper();
+
+    Logger logger = LoggerFactory.getLogger(ElasticsearchLogDocumentService.class);
 
     @Autowired
-    public ElasticsearchLogDocumentService(LoaderConfiguration loaderConfiguration) {
+    public ElasticsearchLogDocumentService(LoaderConfiguration loaderConfiguration, ElasticsearchServerSettings elasticsearchServerSettings) {
         this.loaderConfiguration = loaderConfiguration;
+        this.elasticsearchServerSettings = elasticsearchServerSettings;
     }
 
     @PostConstruct
-    private void initMonth() {
+    private void initMonth() throws UnknownHostException {
         loaderConfiguration.getMonthBoost().forEach((key, value) -> {
             for (int i = 0; i < value; i++) {
                 availableMonths.add(key);
             }
         });
+
+        Settings settings = Settings.builder()
+                .put("cluster.name", elasticsearchServerSettings.getClusterName())
+                .put("client.transport.sniff", true)
+                .build();
+        client = new PreBuiltTransportClient(settings);
+        for (ElasticsearchNode esNode : elasticsearchServerSettings.getNodes()) {
+            client.addTransportAddress(
+                    new InetSocketTransportAddress(
+                            InetAddress.getByName(esNode.getHost()), esNode.getPort()));
+        }
     }
 
-    public List<ElasticsearchLogDocument> constructLogDocuments() {
+    public void pushDocuments() {
+        List<ElasticsearchLogDocument> docs = constructLogDocuments();
+
+        BulkRequestBuilder bulkRequest = client.prepareBulk();
+
+        for (ElasticsearchLogDocument doc:docs) {
+            try {
+                bulkRequest.add(client.prepareIndex(elasticsearchServerSettings.getIndexName(), elasticsearchServerSettings.getIndexName())
+                        .setSource(mapper.writeValueAsString(doc)));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        BulkResponse bulkResponse = bulkRequest.get();
+        if (bulkResponse.hasFailures()) {
+            logger.error(bulkResponse.buildFailureMessage());
+        }
+    }
+
+    private List<ElasticsearchLogDocument> constructLogDocuments() {
         List<ElasticsearchLogDocument> results = new ArrayList<>();
 
         for (int i = 1; i <= 250; i++) {

@@ -35,5 +35,5 @@ elasticsearch:
   documentType: log
   nodes:
     - localhost:
-      host: 127.0.0.1
+      host: localhost
       port: 9300

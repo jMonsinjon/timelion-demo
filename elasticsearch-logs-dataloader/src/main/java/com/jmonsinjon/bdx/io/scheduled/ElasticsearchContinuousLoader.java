@@ -1,8 +1,6 @@
 package com.jmonsinjon.bdx.io.scheduled;
 
-import com.jmonsinjon.bdx.io.repository.LogsRepository;
 import com.jmonsinjon.bdx.io.service.ElasticsearchLogDocumentService;
-import org.elasticsearch.common.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,20 +18,18 @@ import java.util.Calendar;
 public class ElasticsearchContinuousLoader {
 
 
-    private LogsRepository logsRepository;
     private ElasticsearchLogDocumentService elasticsearchLogDocumentService;
 
     Logger logger = LoggerFactory.getLogger(ElasticsearchContinuousLoader.class);
 
     @Autowired
-    public ElasticsearchContinuousLoader(LogsRepository logsRepository, ElasticsearchLogDocumentService elasticsearchLogDocumentService) {
+    public ElasticsearchContinuousLoader(ElasticsearchLogDocumentService elasticsearchLogDocumentService) {
         this.elasticsearchLogDocumentService = elasticsearchLogDocumentService;
-        this.logsRepository = logsRepository;
     }
 
     @Scheduled(fixedDelay = 1000)
     public void loadData() {
         logger.info(Calendar.getInstance().getTime().toString());
-        logsRepository.save(elasticsearchLogDocumentService.constructLogDocuments());
+        elasticsearchLogDocumentService.pushDocuments();
     }
 }
