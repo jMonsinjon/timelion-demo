@@ -10,7 +10,6 @@ import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
-import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +35,7 @@ public class ElasticsearchLogDocumentService {
     private List<Integer> availableMonths = new ArrayList<>();
     private TransportClient client;
     private ObjectMapper mapper = new ObjectMapper();
+    private Long nbPushedDocuments = 0L;
 
     Logger logger = LoggerFactory.getLogger(ElasticsearchLogDocumentService.class);
 
@@ -57,7 +57,7 @@ public class ElasticsearchLogDocumentService {
                 .put("cluster.name", elasticsearchServerSettings.getClusterName())
                 .put("client.transport.sniff", true)
                 .build();
-        client = new PreBuiltTransportClient(settings);
+        client = TransportClient.builder().settings(settings).build();
         for (ElasticsearchNode esNode : elasticsearchServerSettings.getNodes()) {
             client.addTransportAddress(
                     new InetSocketTransportAddress(
@@ -83,30 +83,44 @@ public class ElasticsearchLogDocumentService {
         if (bulkResponse.hasFailures()) {
             logger.error(bulkResponse.buildFailureMessage());
         }
+
+        nbPushedDocuments += docs.size();
+        logger.info("{} documents pushed", nbPushedDocuments);
     }
 
     private List<ElasticsearchLogDocument> constructLogDocuments() {
         List<ElasticsearchLogDocument> results = new ArrayList<>();
 
-        for (int i = 1; i <= 250; i++) {
-            Integer month = getRandomMonth();
-            Integer dayOfMonth = getRandomDay(month);
-            DateTime date = new DateTime();
-            date.year().setCopy(2016);
-            date.monthOfYear().setCopy(month);
-            date.dayOfMonth().setCopy(dayOfMonth);
-            date.hourOfDay().setCopy(getRandomHour());
-            date.minuteOfHour().setCopy(getRandomMinute());
-            date.secondOfMinute().setCopy(getRandomSecond());
-
+        for (int i = 1; i <= 500; i++) {
             results.add(
                     new ElasticsearchLogDocument()
-                            .setCountry("FR")
-                            .setIpAddress("127.0.0." + i)
-                            .setLogDate(date)
+                            .setCountry("BE")
+                            .setIpAddress(getRandomIp())
+                            .setLogDate(getRandomDate())
             );
         }
         return results;
+    }
+
+    private DateTime getRandomDate() {
+        DateTime date = new DateTime();
+        date = date.year().setCopy(2016);
+
+        Integer month = getRandomMonth();
+        Integer dayOfMonth = getRandomDay(month);
+
+        date = date.monthOfYear().setCopy(month);
+        date = date.dayOfMonth().setCopy(dayOfMonth);
+        date = date.hourOfDay().setCopy(getRandomHour());
+        date = date.minuteOfHour().setCopy(getRandomMinute());
+        date = date.secondOfMinute().setCopy(getRandomSecond());
+
+        if (date.isAfterNow()){
+            date = date.year().setCopy(2015);
+        }
+
+        return date;
+
     }
 
     private Integer getRandomMonth() {
@@ -128,6 +142,25 @@ public class ElasticsearchLogDocumentService {
 
     private Integer getRandomSecond() {
         return getRandomNumber(60);
+    }
+
+    private String getRandomIp() {
+        StringBuffer ipAddress = new StringBuffer();
+        ipAddress
+                // FR .append(getRandomNumber(90))
+                .append(getRandomNumber(80))
+                .append(".")
+                .append(getRandomNumber(44))
+                // FR .append(getRandomNumber(64))
+                .append(".")
+                .append(getRandomNumber(80))
+                // FR .append(getRandomNumber(120))
+                .append(".")
+                .append(getRandomNumber(130))
+                // FR .append(getRandomNumber(200))
+        ;
+
+        return ipAddress.toString();
     }
 
     private Integer getRandomNumber(Integer high) {

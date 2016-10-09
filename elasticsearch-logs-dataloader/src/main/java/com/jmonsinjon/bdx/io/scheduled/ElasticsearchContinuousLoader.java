@@ -29,7 +29,6 @@ public class ElasticsearchContinuousLoader {
 
     @Scheduled(fixedDelay = 1000)
     public void loadData() {
-        logger.info(Calendar.getInstance().getTime().toString());
         elasticsearchLogDocumentService.pushDocuments();
     }
 }
