@@ -66,26 +66,36 @@ public class ElasticsearchLogDocumentService {
     }
 
     public void pushDocuments() {
-        List<ElasticsearchLogDocument> docs = constructLogDocuments();
+        Integer limitDocs = 0;
+        if (loaderConfiguration.getCountry().equals("FR")) {
+            limitDocs = 500000;
+        } else if (loaderConfiguration.getCountry().equals("BE")) {
+            limitDocs = 200000;
+        }
 
-        BulkRequestBuilder bulkRequest = client.prepareBulk();
+        if (nbPushedDocuments < limitDocs) {
+            List<ElasticsearchLogDocument> docs = constructLogDocuments();
 
-        for (ElasticsearchLogDocument doc:docs) {
-            try {
-                bulkRequest.add(client.prepareIndex(elasticsearchServerSettings.getIndexName(), elasticsearchServerSettings.getIndexName())
-                        .setSource(mapper.writeValueAsString(doc)));
-            } catch (IOException e) {
-                e.printStackTrace();
+            BulkRequestBuilder bulkRequest = client.prepareBulk();
+
+            for (ElasticsearchLogDocument doc : docs) {
+                try {
+                    bulkRequest.add(client.prepareIndex(elasticsearchServerSettings.getIndexName(), elasticsearchServerSettings.getIndexName())
+                            .setSource(mapper.writeValueAsString(doc)));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
-        }
 
-        BulkResponse bulkResponse = bulkRequest.get();
-        if (bulkResponse.hasFailures()) {
-            logger.error(bulkResponse.buildFailureMessage());
-        }
+            BulkResponse bulkResponse = bulkRequest.get();
+            nbPushedDocuments += docs.size();
 
-        nbPushedDocuments += docs.size();
-        logger.info("{} documents pushed", nbPushedDocuments);
+            if (bulkResponse.hasFailures()) {
+                logger.error(bulkResponse.buildFailureMessage());
+            }
+
+            logger.info("{} documents pushed", nbPushedDocuments);
+        }
     }
 
     private List<ElasticsearchLogDocument> constructLogDocuments() {
@@ -94,7 +104,7 @@ public class ElasticsearchLogDocumentService {
         for (int i = 1; i <= 500; i++) {
             results.add(
                     new ElasticsearchLogDocument()
-                            .setCountry("BE")
+                            .setCountry(loaderConfiguration.getCountry())
                             .setIpAddress(getRandomIp())
                             .setLogDate(getRandomDate())
             );
@@ -104,7 +114,7 @@ public class ElasticsearchLogDocumentService {
 
     private DateTime getRandomDate() {
         DateTime date = new DateTime();
-        date = date.year().setCopy(2016);
+        date = date.year().setCopy(loaderConfiguration.getYear());
 
         Integer month = getRandomMonth();
         Integer dayOfMonth = getRandomDay(month);
@@ -115,7 +125,7 @@ public class ElasticsearchLogDocumentService {
         date = date.minuteOfHour().setCopy(getRandomMinute());
         date = date.secondOfMinute().setCopy(getRandomSecond());
 
-        if (date.isAfterNow()){
+        if (date.isAfterNow()) {
             date = date.year().setCopy(2015);
         }
 
@@ -146,19 +156,27 @@ public class ElasticsearchLogDocumentService {
 
     private String getRandomIp() {
         StringBuffer ipAddress = new StringBuffer();
-        ipAddress
-                // FR .append(getRandomNumber(90))
-                .append(getRandomNumber(80))
-                .append(".")
-                .append(getRandomNumber(44))
-                // FR .append(getRandomNumber(64))
-                .append(".")
-                .append(getRandomNumber(80))
-                // FR .append(getRandomNumber(120))
-                .append(".")
-                .append(getRandomNumber(130))
-                // FR .append(getRandomNumber(200))
-        ;
+
+        if (loaderConfiguration.getCountry().equals("FR")) {
+            ipAddress
+                    .append(getRandomNumber(40))
+                    .append(".")
+                    .append(getRandomNumber(22))
+                    .append(".")
+                    .append(getRandomNumber(40))
+                    .append(".")
+                    .append(getRandomNumber(100));
+        } else if (loaderConfiguration.getCountry().equals("BE")) {
+            ipAddress
+                    .append(getRandomNumber(20))
+                    .append(".")
+                    .append(getRandomNumber(10))
+                    .append(".")
+                    .append(getRandomNumber(20))
+                    .append(".")
+                    .append(getRandomNumber(100));
+        }
+
 
         return ipAddress.toString();
     }
